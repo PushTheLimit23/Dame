@@ -261,6 +261,7 @@ input:focus { border-color: var(--brass); }
 /* ---------- Status & Panels ---------- */
 .status { text-align: center; min-height: 1.5em; margin: 12px 0 6px; font-size: 1.05rem; }
 .status b { color: var(--brass); }
+.status a { color: var(--brass); }
 .status .must { color: #f0a774; font-weight: 600; }
 .actions { display: flex; gap: 10px; justify-content: center; margin-bottom: 14px; }
 .panel {

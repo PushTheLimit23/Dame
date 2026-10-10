@@ -11,7 +11,19 @@
   let clientId = store.get('dame.clientId');
   if (!clientId) { clientId = rand(20); store.set('dame.clientId', clientId); }
   let name = store.get('dame.name') || '';
-  let roomId = (new URLSearchParams(location.search).get('r') || '').toLowerCase();
+  // Spiel-Code robust aus der Adresse lesen: Messenger hängen gern Text, Satzzeichen
+  // oder Leerzeichen direkt an den Link. Codes sind immer 8 Zeichen lang -> die ersten
+  // 8 Buchstaben/Ziffern nach "r=" zählen, der Rest wird ignoriert.
+  function readRoomId() {
+    let raw = location.search + location.hash;
+    try { raw = decodeURIComponent(raw); } catch {}
+    const m = raw.toLowerCase().match(/[?&#]r=([a-z0-9]{4,})/);
+    return m ? m[1].slice(0, 8) : '';
+  }
+  let roomId = readRoomId();
+  const brokenInvite = !roomId && /[?&#]r=/i.test(location.search + location.hash);
+  if (brokenInvite) history.replaceState(null, '', location.pathname);
+  if (roomId && location.search !== '?r=' + roomId) history.replaceState(null, '', '?r=' + roomId);
 
   let ws = null, state = null, prevBoard = null, animatedSeq = null, flipped = null;
   let selection = []; // angeklickter Pfad (Feldindizes)
@@ -23,7 +35,9 @@
   function showLobby() {
     $('#lobby').classList.remove('hidden');
     $('#game').classList.add('hidden');
-    if (roomId) {
+    if (brokenInvite) {
+      $('#lobbyText').textContent = 'Dieser Einladungslink ist unvollständig. Bitte lass ihn dir noch einmal schicken – oder starte hier eine eigene Partie.';
+    } else if (roomId) {
       $('#lobbyText').textContent = 'Du wurdest zu einer Partie Dame eingeladen. Wie heißt du?';
       $('#startBtn').textContent = 'Mitspielen';
     }
@@ -59,6 +73,11 @@
       if (msg.type === 'state') onState(msg);
       else if (msg.type === 'history') renderHistory(msg.games);
       else if (msg.type === 'full') { ws.onclose = null; ws.close(); setStatus('Diese Partie ist schon voll. Starte eine neue über die Startseite.'); }
+      else if (msg.type === 'error' && /Link/.test(msg.msg)) {
+        // Kaputter Link: nicht endlos weiterversuchen, sondern klar erklären
+        ws.onclose = null; ws.close();
+        setStatus(`Dieser Einladungslink ist unvollständig (Code: „${esc(roomId)}“). Bitte lass dir den Link noch einmal schicken – oder <a href="/">starte eine neue Partie</a>.`);
+      }
       else if (msg.type === 'error') toast(msg.msg);
     };
     ws.onclose = () => {
@@ -238,7 +257,8 @@
   $('#shareBtn').addEventListener('click', async () => {
     const url = location.origin + location.pathname + '?r=' + roomId;
     try {
-      if (navigator.share) await navigator.share({ title: 'Dame', text: `${name} fordert dich zu einer Partie Dame heraus!`, url });
+      // Nur Titel + Link teilen: Manche Apps kleben einen zusätzlichen Text direkt an den Link
+      if (navigator.share) await navigator.share({ title: `${name} fordert dich zu einer Partie Dame heraus!`, url });
       else { await navigator.clipboard.writeText(url); toast('Link kopiert'); }
     } catch {}
   });
