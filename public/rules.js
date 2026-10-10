@@ -1,10 +1,10 @@
 // Dame – Regeln (läuft identisch im Browser und auf dem Server)
 // 8x8-Brett, gespielt auf den dunklen Feldern.
-// - Steine ziehen diagonal vorwärts, schlagen vorwärts UND rückwärts
+// - Einfache Steine ziehen und schlagen nur vorwärts (diagonal)
 // - Schlagpflicht, Mehrfachsprünge müssen zu Ende geschlagen werden
 // - Dame ("König") zieht und schlägt beliebig weit (fliegende Dame)
 // - Geschlagene Steine verschwinden erst am Ende des Zuges (dürfen nicht doppelt übersprungen werden)
-// - Umwandlung zur Dame nur, wenn der Zug auf der Grundlinie des Gegners endet
+// - Umwandlung zur Dame nur, wenn der Zug auf der gegnerischen Grundlinie endet
 (function (root, factory) {
   if (typeof module === 'object' && module.exports) module.exports = factory();
   else root.DameRules = factory();
@@ -57,6 +57,7 @@
             lr += dr; lc += dc;
           }
         } else {
+          if (dr !== forward(color)) continue; // einfache Steine schlagen nur vorwärts
           const mr = r + dr, mc = c + dc, lr = r + 2 * dr, lc = c + 2 * dc;
           if (!inB(lr, lc)) continue;
           const vi = idx(mr, mc);

@@ -275,7 +275,7 @@
   function renderStatus(legal) {
     const s = state;
     const opp = s.players.find((p) => p.color !== s.you);
-    const oppName = opp ? esc(opp.name) : 'Gegner';
+    const oppName = opp ? esc(opp.name) : 'Mitspieler';
     $('#rematchBtn').classList.toggle('hidden', s.status !== 'over');
     $('#resignBtn').classList.toggle('hidden', s.status !== 'playing');
 
